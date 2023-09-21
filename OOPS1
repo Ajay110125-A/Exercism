@@ -1,0 +1,152 @@
+*&---------------------------------------------------------------------*
+*& Report ZK_TEMP1
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zk_temp1.
+
+TYPES avg TYPE p DECIMALS 2.
+
+CLASS zcl_itab_basics DEFINITION.
+*  PUBLIC
+*  FINAL
+*  CREATE PUBLIC .
+
+
+  PUBLIC SECTION.
+    TYPES group TYPE c LENGTH 1.
+
+    TYPES: BEGIN OF initial_type,
+             group       TYPE group,
+             number      TYPE i,
+             description TYPE string,
+           END OF initial_type,
+           itab_data_type TYPE STANDARD TABLE OF initial_type WITH EMPTY KEY.
+
+    TYPES: BEGIN OF aggregated_data_type,
+             group   TYPE group,
+             count   TYPE i,
+             sum     TYPE i,
+             min     TYPE i,
+             max     TYPE i,
+             average TYPE avg,
+           END OF aggregated_data_type,
+           aggregated_data TYPE STANDARD TABLE OF aggregated_data_type WITH EMPTY KEY.
+
+    METHODS fill_itab
+      RETURNING
+        VALUE(initial_data) TYPE itab_data_type.
+
+    METHODS add_to_itab
+      IMPORTING initial_data        TYPE itab_data_type
+      RETURNING
+                VALUE(updated_data) TYPE itab_data_type.
+
+    METHODS sort_itab
+      IMPORTING initial_data        TYPE itab_data_type
+      RETURNING
+                VALUE(updated_data) TYPE itab_data_type.
+
+    METHODS search_itab
+      IMPORTING initial_data        TYPE itab_data_type
+      RETURNING
+                VALUE(result_index) TYPE i.
+
+    METHODS perform_aggregation
+      IMPORTING
+        initial_numbers        TYPE itab_data_type
+      RETURNING
+        VALUE(aggregated_data) TYPE aggregated_data.
+
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS zcl_itab_basics IMPLEMENTATION.
+  METHOD fill_itab.
+    "add solution here
+    APPEND VALUE #( group = 'A' number = 10  description = 'Group A-2' ) TO initial_data.
+    APPEND VALUE #( group = 'B' number = 5   description = 'Group B'   ) TO initial_data.
+    APPEND VALUE #( group = 'A' number = 6   description = 'Group A-1' ) TO initial_data.
+    APPEND VALUE #( group = 'C' number = 22  description = 'Group C-1' ) TO initial_data.
+    APPEND VALUE #( group = 'A' number = 13  description = 'Group A-3' ) TO initial_data.
+    APPEND VALUE #( group = 'C' number = 500 description = 'Group C-2' ) TO initial_data.
+
+  ENDMETHOD.
+
+  METHOD add_to_itab.
+    updated_data = initial_data.
+    "add solution here
+    APPEND VALUE #( group = 'A' number = 19 description = 'Group A-4' ) TO updated_data.
+
+  ENDMETHOD.
+
+  METHOD sort_itab.
+    updated_data = initial_data.
+    "add solution here
+    SORT updated_data BY group ASCENDING number DESCENDING.
+  ENDMETHOD.
+
+  METHOD search_itab.
+    DATA(temp_data) = initial_data.
+    "add solution here
+    result_index = line_index( initial_data[ number = 6 ] ).
+  ENDMETHOD.
+
+  METHOD perform_aggregation.
+    " add solution here
+    DATA : l_max TYPE i,
+           l_min TYPE i,
+           l_sum TYPE i,
+           l_avg TYPE p DECIMALS 2.
+
+    LOOP AT initial_numbers ASSIGNING FIELD-SYMBOL(<fs_initial>)
+      GROUP BY ( group = <fs_initial>-group count = GROUP SIZE ) ASSIGNING FIELD-SYMBOL(<fs_group>).
+
+      CLEAR : l_max, l_min, l_sum, l_avg.
+      l_min = 99999999.
+      LOOP AT GROUP <fs_group> ASSIGNING FIELD-SYMBOL(<fs_grows>).
+        IF l_max < <fs_grows>-number.
+          l_max = <fs_grows>-number.
+        ENDIF.
+
+        IF l_min > <fs_grows>-number.
+          l_min = <fs_grows>-number.
+        ENDIF.
+
+        l_sum = l_sum + <fs_grows>-number.
+
+      ENDLOOP.
+      l_avg = l_sum / <fs_group>-count.
+      APPEND VALUE #( group = <fs_group>-group
+                      count = <fs_group>-count
+                      sum = l_sum
+                      min    = l_min
+                      max    = l_max
+                      average = l_avg
+                    ) TO aggregated_data.
+
+    ENDLOOP.
+  ENDMETHOD.
+
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  DATA(lo_fill) = NEW zcl_itab_basics( ).
+
+  DATA(li_data) = lo_fill->fill_itab( ).
+
+  DATA(li_data1) = lo_fill->add_to_itab( initial_data =  li_data ).
+
+  DATA(li_data2) = lo_fill->sort_itab( initial_data =  li_data1 ).
+
+  DATA(l_row) = lo_fill->search_itab( initial_data =  li_data2 ).
+
+  DATA(li_aggrete) = lo_fill->perform_aggregation( initial_numbers =  li_data2 ).
+
+  cl_demo_output=>display( li_aggrete ).
+
+  WRITE : 'The record is ', l_row.
