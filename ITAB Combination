@@ -1,0 +1,113 @@
+*&---------------------------------------------------------------------*
+*& Report ZK_TEMP1
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zk_temp1.
+
+CLASS zcl_itab_combination DEFINITION.
+
+  PUBLIC SECTION.
+
+    TYPES: BEGIN OF alphatab_type,
+             cola TYPE string,
+             colb TYPE string,
+             colc TYPE string,
+           END OF alphatab_type.
+    TYPES alphas TYPE STANDARD TABLE OF alphatab_type.
+
+    TYPES: BEGIN OF numtab_type,
+             col1 TYPE string,
+             col2 TYPE string,
+             col3 TYPE string,
+           END OF numtab_type.
+    TYPES nums TYPE STANDARD TABLE OF numtab_type.
+
+    TYPES: BEGIN OF combined_data_type,
+             colx TYPE string,
+             coly TYPE string,
+             colz TYPE string,
+           END OF combined_data_type.
+    TYPES combined_data TYPE STANDARD TABLE OF combined_data_type WITH EMPTY KEY.
+
+    METHODS perform_combination
+      IMPORTING
+        alphas               TYPE alphas
+        nums                 TYPE nums
+      RETURNING
+        VALUE(combined_data) TYPE combined_data.
+
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+
+
+ENDCLASS.
+
+CLASS zcl_itab_combination IMPLEMENTATION.
+
+  METHOD perform_combination.
+    DATA : lv_index TYPE sy-tabix.
+    DATA : wa_combine TYPE LINE OF combined_data.
+*      combined_data = VALUE #(
+*        FOR wa_alphas IN alphas
+*        FOR wa_nums   IN nums
+*        (
+*          colx = wa_alphas-cola && wa_nums-col1
+*
+*          coly = wa_alphas-colb && wa_nums-col2
+*          colz = wa_alphas-colc && wa_nums-col3
+*
+*        )
+*      ).
+    LOOP AT alphas INTO DATA(wa_alphas).
+      CLEAR : wa_combine,
+              lv_index.
+      lv_index = sy-tabix.
+
+      READ TABLE nums INTO DATA(wa_nums) INDEX lv_index.
+
+      CONCATENATE wa_alphas-cola wa_nums-col1 INTO wa_combine-colx.
+      CONCATENATE wa_alphas-colb wa_nums-col2 INTO wa_combine-coly.
+      CONCATENATE wa_alphas-colc wa_nums-col3 INTO wa_combine-colz.
+
+      APPEND wa_combine TO combined_data.
+
+    ENDLOOP.
+  ENDMETHOD.
+
+ENDCLASS.
+
+START-OF-SELECTION.
+
+  TYPES: BEGIN OF alphatab_type,
+           cola TYPE string,
+           colb TYPE string,
+           colc TYPE string,
+         END OF alphatab_type.
+  DATA: li_alphas TYPE STANDARD TABLE OF alphatab_type.
+
+  TYPES: BEGIN OF numtab_type,
+           col1 TYPE string,
+           col2 TYPE string,
+           col3 TYPE string,
+         END OF numtab_type.
+  DATA : li_nums TYPE STANDARD TABLE OF numtab_type.
+
+  APPEND VALUE #( cola = 'A' colb = 'B' colc = 'C' ) TO li_alphas.
+  APPEND VALUE #( cola = 'D' colb = 'E' colc = 'F' ) TO li_alphas.
+  APPEND VALUE #( cola = 'G' colb = 'H' colc = 'I' ) TO li_alphas.
+
+  APPEND VALUE #( col1 = '1' col2 = '2' col3 = '3' ) TO li_nums.
+  APPEND VALUE #( col1 = '4' col2 = '5' col3 = '6' ) TO li_nums.
+  APPEND VALUE #( col1 = '7' col2 = '8' col3 = '9' ) TO li_nums.
+
+
+
+  DATA(lo_com) = NEW zcl_itab_combination( ).
+
+  DATA(li_combined) = lo_com->perform_combination(
+                        alphas = li_alphas
+                        nums   = li_nums
+                      ).
+
+  cl_demo_output=>display( li_combined ).
