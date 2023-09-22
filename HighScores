@@ -1,0 +1,93 @@
+*&---------------------------------------------------------------------*
+*& Report ZK_TEMP1
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zk_temp1.
+
+CLASS zcl_high_scores DEFINITION.
+
+  PUBLIC SECTION.
+    TYPES integertab TYPE STANDARD TABLE OF i WITH EMPTY KEY.
+    METHODS constructor
+      IMPORTING
+        scores TYPE integertab.
+
+    METHODS list_scores
+      RETURNING
+        VALUE(result) TYPE integertab.
+
+    METHODS latest
+      RETURNING
+        VALUE(result) TYPE i.
+
+    METHODS personalbest
+      RETURNING
+        VALUE(result) TYPE i.
+
+    METHODS personaltopthree
+      RETURNING
+        VALUE(result) TYPE integertab.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+    DATA scores_list TYPE integertab.
+
+ENDCLASS.
+
+
+CLASS zcl_high_scores IMPLEMENTATION.
+
+  METHOD constructor.
+    me->scores_list = scores.
+  ENDMETHOD.
+
+  METHOD list_scores.
+    " add solution here
+    result = scores_list.
+  ENDMETHOD.
+
+  METHOD latest.
+    " add solution here
+
+    result = scores_list[ lines( scores_list ) ].
+  ENDMETHOD.
+
+  METHOD personalbest.
+    " add solution here
+    DATA(scores) = scores_list.
+    SORT scores DESCENDING.
+    result = scores[ 1 ].
+  ENDMETHOD.
+
+  METHOD personaltopthree.
+    " add solution here
+    DATA(scores) = scores_list.
+    SORT scores DESCENDING.
+    DATA(l_len) = lines( scores ).
+    IF l_len = 1.
+      APPEND scores[ 1 ] TO result.
+    ELSEIF l_len = 2.
+      APPEND scores[ 1 ] TO result.
+      APPEND scores[ 2 ] TO result.
+    ELSEIF l_len GE 3.
+      APPEND scores[ 1 ] TO result.
+      APPEND scores[ 2 ] TO result.
+      APPEND scores[ 3 ] TO result.
+    ENDIF.
+
+  ENDMETHOD.
+
+
+ENDCLASS.
+
+START-OF-SELECTION.
+  TYPES integertab TYPE STANDARD TABLE OF i WITH EMPTY KEY.
+
+  DATA(input_values) = VALUE integertab( ( 30 ) ( 50 ) ( 20 ) ( 70 ) ).
+
+  DATA(lo_high_scores) = NEW zcl_high_scores( scores =  input_values ).
+
+  DATA(l_latest) = lo_high_scores->latest( ).
+  DATA(l_personalbest) = lo_high_scores->personalbest( ).
+  DATA(l_personaltopthree) = lo_high_scores->personaltopthree( ).
+  DATA(l_list_scores) = lo_high_scores->list_scores( ).
